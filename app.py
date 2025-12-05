@@ -5,13 +5,16 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
-# CONFIGURAÇÕES DE AMBIENTE
-# Pega a chave do ambiente ou usa uma padrão para testes locais
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'minha_chave_secreta_local')
+# CONFIGURAÇÃO IMPORTANTE:
+# Usa uma chave segura do ambiente ou uma padrão para testes
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key_123')
 
-# Configuração do Banco de Dados (SQLite local ou Postgres na nuvem)
+# Configuração do Banco de Dados
+# Se houver um banco externo configurado (DATABASE_URL), usa ele.
+# Se não, usa o SQLite local.
 database_url = os.environ.get('DATABASE_URL', 'sqlite:///crm.db')
-# Correção necessária para o Render (postgres:// -> postgresql://)
+
+# Correção para compatibilidade com alguns bancos externos (Postgres)
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
