@@ -5,37 +5,31 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
-# CONFIGURAÇÃO IMPORTANTE:
-# Usa uma chave segura do ambiente ou uma padrão para testes
+# CONFIGURAÇÕES
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key_123')
-
-# Configuração do Banco de Dados
-# Se houver um banco externo configurado (DATABASE_URL), usa ele.
-# Se não, usa o SQLite local.
 database_url = os.environ.get('DATABASE_URL', 'sqlite:///crm.db')
-
-# Correção para compatibilidade com alguns bancos externos (Postgres)
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
-
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 db = SQLAlchemy(app)
 
-# --- MODELOS (BD) ---
+# --- MODELOS ---
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
-    # Relacionamento com clientes
     clients = db.relationship('Client', backref='owner', lazy=True)
 
 class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False) # RF-002
-    phone = db.Column(db.String(20), nullable=False) # RF-002
-    tipo = db.Column(db.String(50), default='Lead')  # RF-004
-    status = db.Column(db.String(50), default='Novo') # RF-009 (Etapa do Pipeline)
+    name = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20), nullable=False)
+    tipo = db.Column(db.String(50), default='Lead') # RF-004
+    # RF-007: Atributos da Oportunidade (Valor Monetário)
+    value = db.Column(db.Float, default=0.0) 
+    # RF-009: Status para o Kanban (Lead -> Negociação -> Fechado)
+    status = db.Column(db.String(50), default='Lead') 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 # --- ROTAS ---
@@ -51,11 +45,9 @@ def register():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        
         if User.query.filter_by(email=email).first():
-            flash('Email já cadastrado.')
+            flash('Email já existe.')
             return redirect(url_for('register'))
-        
         hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
         new_user = User(email=email, password_hash=hashed_pw)
         db.session.add(new_user)
@@ -70,7 +62,6 @@ def login():
         email = request.form['email']
         password = request.form['password']
         user = User.query.filter_by(email=email).first()
-        
         if user and check_password_hash(user.password_hash, password):
             session['user_id'] = user.id
             return redirect(url_for('dashboard'))
@@ -83,28 +74,62 @@ def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    # RF-002: Cadastro Rápido
+    # RF-002: Cadastro Rápido de Clientes
     if request.method == 'POST':
         name = request.form.get('name')
         phone = request.form.get('phone')
-        tipo = request.form.get('tipo', 'Lead')
+        value = request.form.get('value', 0) # RF-007
         
+        try:
+            value = float(value)
+        except ValueError:
+            value = 0.0
+
         if name and phone:
-            new_client = Client(name=name, phone=phone, tipo=tipo, user_id=session['user_id'])
+            # Todo novo cliente entra como 'Lead' no Kanban
+            new_client = Client(name=name, phone=phone, value=value, status='Lead', user_id=session['user_id'])
             db.session.add(new_client)
             db.session.commit()
-            flash('Cliente adicionado!')
+            flash('Oportunidade adicionada!')
         
         return redirect(url_for('dashboard'))
 
-    user_clients = Client.query.filter_by(user_id=session['user_id']).all()
-    return render_template('dashboard.html', clients=user_clients)
+    # Busca clientes do usuário
+    all_clients = Client.query.filter_by(user_id=session['user_id']).all()
+    
+    # RF-012/013: Indicadores (KPIs)
+    total_volume = sum(c.value for c in all_clients)
+    total_fechado = sum(c.value for c in all_clients if c.status == 'Fechado')
+    count_active = len([c for c in all_clients if c.status != 'Fechado'])
+
+    return render_template('dashboard.html', 
+                           clients=all_clients, 
+                           total_volume=total_volume,
+                           total_fechado=total_fechado,
+                           count_active=count_active)
+
+# Nova Rota para Mover Cards no Kanban (RF-009)
+@app.route('/update_status/<int:id>/<string:new_status>')
+def update_status(id, new_status):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+        
+    client = Client.query.get_or_404(id)
+    
+    # Segurança: Garante que o cliente pertence ao usuário logado
+    if client.user_id == session['user_id']:
+        client.status = new_status
+        db.session.commit()
+        flash(f'Cliente movido para {new_status}!')
+    
+    return redirect(url_for('dashboard'))
 
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
 
+# Força criação das tabelas no Render
 with app.app_context():
     db.create_all()
 
