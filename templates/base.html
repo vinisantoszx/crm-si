@@ -3,87 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRM Pro</title>
+    <title>CRM Pro - Gestão PME</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-    <div class="wrapper">
-        <nav id="sidebar">
-            <a href="#" class="sidebar-brand">
-                <span style="color: var(--primary-color);">CRM</span>CRM
+    <nav id="sidebar">
+        <a href="{{ url_for('dashboard') }}" class="sidebar-brand">
+            CRM<span class="brand-highlight">CRM</span>
+        </a>
+
+        <div class="d-flex flex-column gap-1">
+            
+            <a href="{{ url_for('dashboard') }}" class="sidebar-link {{ 'active' if request.endpoint == 'dashboard' }}">
+                <i class="ph ph-squares-four" style="font-size: 1.2rem;"></i> 
+                Dashboard
+            </a>
+            
+            <a href="{{ url_for('oportunidades') }}" class="sidebar-link {{ 'active' if request.endpoint == 'oportunidades' }}">
+                <i class="ph ph-kanban" style="font-size: 1.2rem;"></i> 
+                Oportunidades
+            </a>
+            
+            <a href="{{ url_for('clientes') }}" class="sidebar-link {{ 'active' if request.endpoint == 'clientes' }}">
+                <i class="ph ph-users" style="font-size: 1.2rem;"></i> 
+                Clientes
             </a>
 
-            <ul class="sidebar-menu">
-                <li class="sidebar-item">
-                    <a href="{{ url_for('dashboard') }}" class="sidebar-link active">
-                        <i class="ph ph-squares-four"></i>
-                        Dashboard
-                    </a>
-                </li>
-                <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
-                        <i class="ph ph-chart-bar"></i>
-                        Oportunidades
-                    </a>
-                </li>
-                <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
-                        <i class="ph ph-users"></i>
-                        Clientes
-                    </a>
-                </li>
-            </ul>
-
-            <a href="#" data-bs-toggle="modal" data-bs-target="#modalNovoCliente" class="btn-sidebar-cta">
-                <i class="ph-bold ph-plus"></i> Cliente Rápido
-            </a>
-
-            <div class="mt-auto">
-                <a href="{{ url_for('logout') }}" class="sidebar-link text-danger">
-                    <i class="ph ph-sign-out"></i>
-                    Sair
-                </a>
-            </div>
-        </nav>
-
-        <div id="content">
-            {% with messages = get_flashed_messages() %}
-                {% if messages %}
-                    <div class="alert alert-info border-0 shadow-sm rounded-3 mb-4">
-                        {{ messages[0] }}
-                    </div>
-                {% endif %}
-            {% endwith %}
-
-            {% block content %}{% endblock %}
         </div>
+
+        <button class="btn-cta" data-bs-toggle="modal" data-bs-target="#modalNovoCliente">
+            <i class="ph-bold ph-plus"></i> Cliente Rápido
+        </button>
+
+        <div class="mt-auto pt-4 border-top border-secondary border-opacity-25">
+            <a href="{{ url_for('logout') }}" class="sidebar-link text-danger">
+                <i class="ph ph-sign-out" style="font-size: 1.2rem;"></i> 
+                Sair do Sistema
+            </a>
+        </div>
+    </nav>
+
+    <div class="content-wrapper">
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert alert-info border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2">
+                    <i class="ph-fill ph-info"></i>
+                    {{ messages[0] }}
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+        
     </div>
 
     <div class="modal fade" id="modalNovoCliente" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold">Novo Cliente</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">
+                        <i class="ph-bold ph-user-plus me-2"></i>Novo Cliente
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <form action="{{ url_for('dashboard') }}" method="POST">
                         <div class="mb-3">
-                            <label class="form-label">Nome</label>
-                            <input type="text" name="name" class="form-control" required>
+                            <label class="form-label text-muted small fw-bold">NOME DO CLIENTE</label>
+                            <input type="text" name="name" class="form-control form-control-lg bg-light" required placeholder="Ex: João Silva">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">WhatsApp</label>
-                            <input type="text" name="phone" class="form-control" required>
+                            <label class="form-label text-muted small fw-bold">WHATSAPP / TELEFONE</label>
+                            <input type="text" name="phone" class="form-control form-control-lg bg-light" required placeholder="(00) 00000-0000">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Valor Estimado (R$)</label>
-                            <input type="number" name="value" class="form-control" step="0.01">
+                            <label class="form-label text-muted small fw-bold">VALOR ESTIMADO DA VENDA</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">R$</span>
+                                <input type="number" name="value" class="form-control form-control-lg bg-light border-start-0" step="0.01" placeholder="0,00">
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">Salvar Cliente</button>
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold">Salvar Oportunidade</button>
+                        </div>
                     </form>
                 </div>
             </div>

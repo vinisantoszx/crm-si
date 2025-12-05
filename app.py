@@ -74,39 +74,107 @@ def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    # RF-002: Cadastro Rápido de Clientes
+    # Lógica de Salvar (Mantida)
     if request.method == 'POST':
         name = request.form.get('name')
         phone = request.form.get('phone')
-        value = request.form.get('value', 0) # RF-007
-        
+        value = request.form.get('value', 0)
         try:
             value = float(value)
         except ValueError:
             value = 0.0
-
+        
         if name and phone:
-            # Todo novo cliente entra como 'Lead' no Kanban
             new_client = Client(name=name, phone=phone, value=value, status='Lead', user_id=session['user_id'])
             db.session.add(new_client)
             db.session.commit()
-            flash('Oportunidade adicionada!')
-        
+            flash('Cliente adicionado com sucesso!')
         return redirect(url_for('dashboard'))
 
-    # Busca clientes do usuário
+    # --- CÁLCULO DOS DADOS REAIS (KPIS) ---
     all_clients = Client.query.filter_by(user_id=session['user_id']).all()
     
-    # RF-012/013: Indicadores (KPIs)
+    # 1. Volume Total (Soma de tudo no pipeline)
     total_volume = sum(c.value for c in all_clients)
-    total_fechado = sum(c.value for c in all_clients if c.status == 'Fechado')
+    
+    # 2. Vendas Fechadas (Soma só de quem é 'Fechado')
+    fechados = [c for c in all_clients if c.status == 'Fechado']
+    total_fechado = sum(c.value for c in fechados)
+    count_fechado = len(fechados)
+    
+    # 3. Contagem Ativa (Quem não está fechado)
     count_active = len([c for c in all_clients if c.status != 'Fechado'])
 
-    return render_template('dashboard.html', 
-                           clients=all_clients, 
-                           total_volume=total_volume,
-                           total_fechado=total_fechado,
-                           count_active=count_active)
+    # 4. Ticket Médio (Média de valor por venda fechada)
+    ticket_medio = 0
+    if count_fechado > 0:
+        ticket_medio = total_fechado / count_fechado
+
+    # 5. Taxa de Conversão (Fechados / Total de Clientes)
+    taxa_conversao = 0
+    total_clientes_count = len(all_clients)
+    if total_clientes_count > 0:
+        taxa_conversao = (count_fechado / total_clientes_count) * 100
+
+    # Formatando para string bonita (R$ 1.000,00) para enviar ao HTML
+    kpis = {
+        'volume': f"{total_volume:,.2f}",
+        'fechado': f"{total_fechado:,.2f}",
+        'ativos': count_active,
+        'ticket_medio': f"{ticket_medio:,.2f}",
+        'conversao': int(taxa_conversao)
+    }
+
+    return render_template('dashboard.html', clients=all_clients, kpis=kpis)
+
+@app.route('/oportunidades')
+def oportunidades():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    clients = Client.query.filter_by(user_id=session['user_id']).all()
+    
+    # Organiza os totais por coluna para o cabeçalho do Kanban
+    resumo = {
+        'Lead': sum(c.value for c in clients if c.status == 'Lead'),
+        'Qualificado': sum(c.value for c in clients if c.status == 'Qualificado'),
+        'Proposta': sum(c.value for c in clients if c.status == 'Proposta'),
+        'Negociacao': sum(c.value for c in clients if c.status == 'Negociacao'),
+        'Fechado': sum(c.value for c in clients if c.status == 'Fechado')
+    }
+    
+    # Contagem de itens
+    contagem = {
+        'Lead': len([c for c in clients if c.status == 'Lead']),
+        'Qualificado': len([c for c in clients if c.status == 'Qualificado']),
+        'Proposta': len([c for c in clients if c.status == 'Proposta']),
+        'Negociacao': len([c for c in clients if c.status == 'Negociacao']),
+        'Fechado': len([c for c in clients if c.status == 'Fechado'])
+    }
+
+    return render_template('oportunidades.html', clients=clients, resumo=resumo, contagem=contagem)
+
+@app.route('/clientes')
+def clientes():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    # Filtro simples via URL (ex: /clientes?filtro=Lead)
+    filtro_status = request.args.get('filtro')
+    
+    query = Client.query.filter_by(user_id=session['user_id'])
+    
+    if filtro_status and filtro_status != 'Todos':
+        # Mapeia os filtros da tela para o banco
+        if filtro_status == 'Ativos':
+            query = query.filter(Client.status.in_(['Lead', 'Qualificado', 'Proposta', 'Negociacao']))
+        elif filtro_status == 'Fechados':
+            query = query.filter_by(status='Fechado')
+        else:
+            query = query.filter_by(status=filtro_status)
+            
+    clients = query.all()
+    return render_template('clientes.html', clients=clients, filtro_atual=filtro_status)
 
 # Nova Rota para Mover Cards no Kanban (RF-009)
 @app.route('/update_status/<int:id>/<string:new_status>')

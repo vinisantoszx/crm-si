@@ -3,132 +3,113 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="fw-bold m-0 text-dark">Dashboard</h2>
-        <p class="text-muted m-0">Visão geral das suas vendas</p>
-    </div>
-    <div class="btn-group bg-white shadow-sm rounded p-1" role="group">
-        <button type="button" class="btn btn-sm btn-dark rounded">Tudo</button>
-        <button type="button" class="btn btn-sm btn-light text-muted">Semana</button>
-        <button type="button" class="btn btn-sm btn-light text-muted">Mês</button>
+        <h2 class="fw-bold m-0 text-dark">Visão Geral</h2>
+        <p class="text-muted m-0">Acompanhe seus resultados em tempo real.</p>
     </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-md-3">
-        <div class="kpi-card">
-            <div class="kpi-title">Em Negociação</div>
-            <div class="kpi-value">R$ {{ total_volume }}</div>
-            <div class="text-muted small">{{ count_active }} oportunidades</div>
-            <div class="kpi-icon-box icon-blue">
-                <i class="ph-bold ph-trend-up"></i>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="kpi-card">
-            <div class="kpi-title">Vendas Fechadas</div>
-            <div class="kpi-value">R$ {{ total_fechado }}</div>
-            <div class="text-muted small">Sucesso total</div>
-            <div class="kpi-icon-box icon-green">
-                <i class="ph-bold ph-currency-dollar"></i>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="kpi-card">
-            <div class="kpi-title">Taxa de Conversão</div>
-            <div class="kpi-value">12%</div>
-            <div class="text-muted small">Lead &rarr; Venda</div>
-            <div class="kpi-icon-box icon-orange">
-                <i class="ph-bold ph-target"></i>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="kpi-card">
-            <div class="kpi-title">Ticket Médio</div>
-            <div class="kpi-value">R$ 0</div>
-            <div class="text-muted small">Por venda fechada</div>
-            <div class="kpi-icon-box icon-purple">
-                <i class="ph-bold ph-users"></i>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
+<div class="row g-4 mb-4">
     
-    <div class="col-md-7">
-        <div class="section-card h-100">
-            <h5 class="section-title">Pipeline de Vendas</h5>
-            
-            <div class="mb-4">
-                <div class="d-flex justify-content-between mb-1">
-                    <span class="fw-medium">Leads</span>
-                    <span class="fw-bold">R$ {{ total_volume }}</span>
+    <div class="col-md-3">
+        <div class="kpi-card h-100 border-0 shadow-sm p-4 rounded-4 bg-white">
+            <div class="d-flex justify-content-between mb-3">
+                <div class="kpi-icon-box icon-blue rounded-3 p-2 bg-light text-primary">
+                    <i class="ph-bold ph-trend-up fs-4"></i>
                 </div>
-                <div class="progress" style="height: 8px;">
-                    <div class="progress-bar bg-primary" role="progressbar" style="width: 40%"></div>
-                </div>
+                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">Pipeline</span>
             </div>
-
-            <div class="mb-4">
-                <div class="d-flex justify-content-between mb-1">
-                    <span class="fw-medium">Negociação</span>
-                    <span class="fw-bold">R$ {{ total_volume }}</span>
-                </div>
-                <div class="progress" style="height: 8px;">
-                    <div class="progress-bar bg-warning" role="progressbar" style="width: 25%"></div>
-                </div>
-            </div>
-
-            <div class="mb-4">
-                <div class="d-flex justify-content-between mb-1">
-                    <span class="fw-medium">Fechados</span>
-                    <span class="fw-bold text-success">R$ {{ total_fechado }}</span>
-                </div>
-                <div class="progress" style="height: 8px;">
-                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
-                </div>
-            </div>
-            
-            <div class="mt-4 pt-3 border-top">
-                <h6 class="text-muted mb-3">Acesso Rápido aos Clientes</h6>
-                <div class="d-flex gap-2 overflow-auto pb-2">
-                    {% for client in clients %}
-                    <div class="card p-2 shadow-sm border-0" style="min-width: 150px; background: #f8fafc;">
-                        <small class="fw-bold d-block text-truncate">{{ client.name }}</small>
-                        <span class="badge bg-white text-dark border">{{ client.status }}</span>
-                        <div class="mt-2 text-end">
-                            <a href="{{ url_for('update_status', id=client.id, new_status='Fechado') }}" class="btn btn-xs btn-success py-0" style="font-size: 10px;">✔</a>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
+            <h5 class="text-muted small fw-bold text-uppercase ls-1">Volume em Negociação</h5>
+            <h2 class="fw-bold text-dark mt-2 mb-0">R$ {{ kpis.volume }}</h2>
         </div>
     </div>
 
-    <div class="col-md-5">
-        <div class="section-card h-100">
-            <h5 class="section-title">Últimas Atividades</h5>
-            
-            {% for client in clients[-5:]|reverse %} <div class="activity-item">
-                <div>
-                    <div class="fw-bold text-dark">{{ client.name }}</div>
-                    <div class="text-muted small">
-                        Status: <span class="text-primary">{{ client.status }}</span> • Whatsapp
-                    </div>
+    <div class="col-md-3">
+        <div class="kpi-card h-100 border-0 shadow-sm p-4 rounded-4 bg-white">
+            <div class="d-flex justify-content-between mb-3">
+                <div class="kpi-icon-box icon-green rounded-3 p-2 bg-light text-success">
+                    <i class="ph-bold ph-check-circle fs-4"></i>
                 </div>
-                <div class="fw-bold text-dark">R$ {{ client.value }}</div>
+                <span class="badge bg-success bg-opacity-10 text-success rounded-pill">Receita</span>
             </div>
-            {% else %}
-            <p class="text-muted text-center py-4">Nenhuma atividade recente.</p>
-            {% endfor %}
-            
+            <h5 class="text-muted small fw-bold text-uppercase ls-1">Vendas Fechadas</h5>
+            <h2 class="fw-bold text-success mt-2 mb-0">R$ {{ kpis.fechado }}</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="kpi-card h-100 border-0 shadow-sm p-4 rounded-4 bg-white">
+            <div class="d-flex justify-content-between mb-3">
+                <div class="kpi-icon-box icon-purple rounded-3 p-2 bg-light text-info">
+                    <i class="ph-bold ph-receipt fs-4"></i>
+                </div>
+                <span class="badge bg-info bg-opacity-10 text-info rounded-pill">Média</span>
+            </div>
+            <h5 class="text-muted small fw-bold text-uppercase ls-1">Ticket Médio</h5>
+            <h2 class="fw-bold text-dark mt-2 mb-0">R$ {{ kpis.ticket_medio }}</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="kpi-card h-100 border-0 shadow-sm p-4 rounded-4 bg-white">
+            <div class="d-flex justify-content-between mb-3">
+                <div class="kpi-icon-box icon-orange rounded-3 p-2 bg-light text-warning">
+                    <i class="ph-bold ph-target fs-4"></i>
+                </div>
+                <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill">Eficiência</span>
+            </div>
+            <h5 class="text-muted small fw-bold text-uppercase ls-1">Conversão</h5>
+            <h2 class="fw-bold text-dark mt-2 mb-0">{{ kpis.conversao }}%</h2>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white border-0 py-3 px-4">
+        <h5 class="fw-bold m-0">Últimas Atividades</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 py-3 text-muted small text-uppercase">Cliente</th>
+                        <th class="py-3 text-muted small text-uppercase">Status</th>
+                        <th class="py-3 text-muted small text-uppercase">Valor</th>
+                        <th class="pe-4 py-3 text-end text-muted small text-uppercase">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for client in clients[-5:]|reverse %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold text-dark">{{ client.name }}</div>
+                            <div class="small text-muted">{{ client.phone }}</div>
+                        </td>
+                        <td>
+                            {% if client.status == 'Fechado' %}
+                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Fechado</span>
+                            {% elif client.status == 'Lead' %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3">Lead</span>
+                            {% else %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3">{{ client.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold text-dark">R$ {{ client.value }}</td>
+                        <td class="pe-4 text-end">
+                            <a href="{{ url_for('update_status', id=client.id, new_status='Fechado') }}" class="btn btn-sm btn-light rounded-circle" title="Fechar Venda">
+                                <i class="ph-bold ph-check text-success"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            Nenhuma atividade recente. Cadastre um novo cliente!
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

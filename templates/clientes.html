@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="mb-4">
+    <h2 class="page-title">Clientes</h2>
+    <p class="text-muted">Gerencie sua base de clientes</p>
+</div>
+
+<div class="mb-4 d-flex gap-2">
+    <a href="{{ url_for('clientes', filtro='Todos') }}" class="btn btn-sm {{ 'btn-primary' if not filtro_atual or filtro_atual == 'Todos' else 'btn-light' }} rounded-pill px-3">Todos</a>
+    <a href="{{ url_for('clientes', filtro='Lead') }}" class="btn btn-sm {{ 'btn-primary' if filtro_atual == 'Lead' else 'btn-light' }} rounded-pill px-3">Lead</a>
+    <a href="{{ url_for('clientes', filtro='Ativos') }}" class="btn btn-sm {{ 'btn-primary' if filtro_atual == 'Ativos' else 'btn-light' }} rounded-pill px-3">Ativos</a>
+    <a href="{{ url_for('clientes', filtro='Fechados') }}" class="btn btn-sm {{ 'btn-primary' if filtro_atual == 'Fechados' else 'btn-light' }} rounded-pill px-3">Fechados</a>
+</div>
+
+<div class="row g-4">
+    {% for client in clients %}
+    <div class="col-md-6 col-lg-4">
+        <div class="client-card">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h5 class="fw-bold mb-1">{{ client.name }}</h5>
+                    {% if client.status == 'Fechado' %}
+                        <span class="badge bg-success rounded-pill">Cliente Ativo</span>
+                    {% elif client.status == 'Lead' %}
+                        <span class="badge bg-primary rounded-pill">Lead</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark rounded-pill">{{ client.status }}</span>
+                    {% endif %}
+                </div>
+                <div class="avatar-circle">
+                    {{ client.name[0] | upper }}
+                </div>
+            </div>
+
+            <div class="text-muted small d-flex flex-column gap-2">
+                <div><i class="ph-fill ph-phone me-2"></i> {{ client.phone }}</div>
+                <div><i class="ph-fill ph-envelope me-2"></i> email@exemplo.com</div> <div><i class="ph-fill ph-calendar-blank me-2"></i> Desde jan. de 2025</div>
+            </div>
+            
+            <div class="mt-3 text-end">
+                <a href="#" class="btn btn-light btn-sm rounded-circle"><i class="ph-bold ph-caret-right"></i></a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5">
+        <p class="text-muted">Nenhum cliente encontrado com este filtro.</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
