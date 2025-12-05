@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Dashboard</h2>
+    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger">Sair</a>
+</div>
+
+<div class="card mb-5 border-0 shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="m-0">⚡ Novo Cliente Rápido</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="name" class="form-control" placeholder="Nome do Cliente" required>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="phone" class="form-control" placeholder="WhatsApp/Tel" required>
+            </div>
+            <div class="col-md-3">
+                <select name="tipo" class="form-select">
+                    <option value="Lead">Lead (Potencial)</option>
+                    <option value="Cliente">Cliente Ativo</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<h4 class="mb-3">Meus Clientes</h4>
+{% if clients %}
+    <div class="row">
+        {% for client in clients %}
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-start border-4 border-info">
+                <div class="card-body">
+                    <h5 class="card-title">{{ client.name }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ client.tipo }}</h6>
+                    <p class="card-text">
+                        <strong>Status:</strong> <span class="badge bg-secondary">{{ client.status }}</span><br>
+                        📞 {{ client.phone }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-light text-center">
+        Você ainda não tem clientes cadastrados. Use o formulário acima!
+    </div>
+{% endif %}
+
+{% endblock %}
