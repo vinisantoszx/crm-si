@@ -1,153 +1,136 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="row mb-5">
-    <div class="col-md-4">
-        <div class="card kpi-card p-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="kpi-label">Volume Pipeline</div>
-                    <div class="kpi-value">R$ {{ total_volume }}</div>
-                </div>
-                <i class="ph ph-currency-dollar" style="font-size: 2rem; color: #cbd5e1;"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card kpi-card p-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="kpi-label">Vendas Fechadas</div>
-                    <div class="kpi-value text-success">R$ {{ total_fechado }}</div>
-                </div>
-                <i class="ph ph-check-circle" style="font-size: 2rem; color: #cbd5e1;"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card kpi-card p-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="kpi-label">Oportunidades Ativas</div>
-                    <div class="kpi-value text-primary">{{ count_active }}</div>
-                </div>
-                <i class="ph ph-chart-bar" style="font-size: 2rem; color: #cbd5e1;"></i>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold m-0 text-dark">Meu Pipeline</h4>
-    <button class="btn btn-primary d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#formNovoCliente">
-        <i class="ph-bold ph-plus"></i> Nova Oportunidade
-    </button>
-</div>
-
-<div class="collapse mb-4" id="formNovoCliente">
-    <div class="card p-4 border-0 shadow-sm bg-white">
-        <form method="POST" class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label text-muted small fw-bold">NOME DO CLIENTE</label>
-                <input type="text" name="name" class="form-control form-control-lg bg-light border-0" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label text-muted small fw-bold">WHATSAPP</label>
-                <input type="text" name="phone" class="form-control form-control-lg bg-light border-0" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label text-muted small fw-bold">VALOR ESTIMADO</label>
-                <input type="number" name="value" class="form-control form-control-lg bg-light border-0" step="0.01">
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-success btn-lg w-100">Salvar</button>
-            </div>
-        </form>
+    <div>
+        <h2 class="fw-bold m-0 text-dark">Dashboard</h2>
+        <p class="text-muted m-0">Visão geral das suas vendas</p>
+    </div>
+    <div class="btn-group bg-white shadow-sm rounded p-1" role="group">
+        <button type="button" class="btn btn-sm btn-dark rounded">Tudo</button>
+        <button type="button" class="btn btn-sm btn-light text-muted">Semana</button>
+        <button type="button" class="btn btn-sm btn-light text-muted">Mês</button>
     </div>
 </div>
 
-<div class="row g-4" style="min-height: 60vh;">
+<div class="row g-4">
+    <div class="col-md-3">
+        <div class="kpi-card">
+            <div class="kpi-title">Em Negociação</div>
+            <div class="kpi-value">R$ {{ total_volume }}</div>
+            <div class="text-muted small">{{ count_active }} oportunidades</div>
+            <div class="kpi-icon-box icon-blue">
+                <i class="ph-bold ph-trend-up"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="kpi-card">
+            <div class="kpi-title">Vendas Fechadas</div>
+            <div class="kpi-value">R$ {{ total_fechado }}</div>
+            <div class="text-muted small">Sucesso total</div>
+            <div class="kpi-icon-box icon-green">
+                <i class="ph-bold ph-currency-dollar"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="kpi-card">
+            <div class="kpi-title">Taxa de Conversão</div>
+            <div class="kpi-value">12%</div>
+            <div class="text-muted small">Lead &rarr; Venda</div>
+            <div class="kpi-icon-box icon-orange">
+                <i class="ph-bold ph-target"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="kpi-card">
+            <div class="kpi-title">Ticket Médio</div>
+            <div class="kpi-value">R$ 0</div>
+            <div class="text-muted small">Por venda fechada</div>
+            <div class="kpi-icon-box icon-purple">
+                <i class="ph-bold ph-users"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
     
-    <div class="col-md-4">
-        <div class="kanban-column">
-            <div class="kanban-title d-flex justify-content-between">
-                <span>📌 Leads / Entrada</span>
-                <span class="badge bg-white text-secondary shadow-sm rounded-pill">Input</span>
-            </div>
+    <div class="col-md-7">
+        <div class="section-card h-100">
+            <h5 class="section-title">Pipeline de Vendas</h5>
             
-            {% for client in clients if client.status == 'Lead' %}
-            <div class="kanban-card">
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="fw-bold text-dark">{{ client.name }}</span>
-                    <span class="badge-price">R$ {{ client.value }}</span>
+            <div class="mb-4">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="fw-medium">Leads</span>
+                    <span class="fw-bold">R$ {{ total_volume }}</span>
                 </div>
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <small class="text-muted"><i class="ph-fill ph-phone"></i> {{ client.phone }}</small>
-                    <a href="{{ url_for('update_status', id=client.id, new_status='Negociação') }}" class="btn btn-sm btn-light rounded-circle border">
-                        <i class="ph-bold ph-arrow-right text-primary"></i>
-                    </a>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: 40%"></div>
                 </div>
             </div>
-            {% endfor %}
-            
-            {% if not clients|selectattr("status", "equalto", "Lead")|list %}
-                <div class="text-center text-muted mt-4 opacity-50">
-                    <i class="ph ph-tray" style="font-size: 2rem;"></i>
-                    <p class="small mt-2">Nenhum lead novo</p>
+
+            <div class="mb-4">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="fw-medium">Negociação</span>
+                    <span class="fw-bold">R$ {{ total_volume }}</span>
                 </div>
-            {% endif %}
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: 25%"></div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="fw-medium">Fechados</span>
+                    <span class="fw-bold text-success">R$ {{ total_fechado }}</span>
+                </div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+                </div>
+            </div>
+            
+            <div class="mt-4 pt-3 border-top">
+                <h6 class="text-muted mb-3">Acesso Rápido aos Clientes</h6>
+                <div class="d-flex gap-2 overflow-auto pb-2">
+                    {% for client in clients %}
+                    <div class="card p-2 shadow-sm border-0" style="min-width: 150px; background: #f8fafc;">
+                        <small class="fw-bold d-block text-truncate">{{ client.name }}</small>
+                        <span class="badge bg-white text-dark border">{{ client.status }}</span>
+                        <div class="mt-2 text-end">
+                            <a href="{{ url_for('update_status', id=client.id, new_status='Fechado') }}" class="btn btn-xs btn-success py-0" style="font-size: 10px;">✔</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="kanban-column">
-            <div class="kanban-title d-flex justify-content-between">
-                <span>💬 Em Negociação</span>
-                <span class="badge bg-white text-secondary shadow-sm rounded-pill">WIP</span>
-            </div>
+    <div class="col-md-5">
+        <div class="section-card h-100">
+            <h5 class="section-title">Últimas Atividades</h5>
             
-            {% for client in clients if client.status == 'Negociação' %}
-            <div class="kanban-card border-start border-4 border-primary">
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="fw-bold text-dark">{{ client.name }}</span>
-                    <span class="badge-price">R$ {{ client.value }}</span>
+            {% for client in clients[-5:]|reverse %} <div class="activity-item">
+                <div>
+                    <div class="fw-bold text-dark">{{ client.name }}</div>
+                    <div class="text-muted small">
+                        Status: <span class="text-primary">{{ client.status }}</span> • Whatsapp
+                    </div>
                 </div>
-                <div class="d-flex justify-content-between align-items-center mt-3 gap-2">
-                    <a href="{{ url_for('update_status', id=client.id, new_status='Lead') }}" class="text-muted text-decoration-none small">
-                        <i class="ph-bold ph-arrow-left"></i> Voltar
-                    </a>
-                    <a href="{{ url_for('update_status', id=client.id, new_status='Fechado') }}" class="btn btn-sm btn-success text-white px-3 rounded-pill fw-bold" style="font-size: 0.8rem;">
-                        Fechar Venda
-                    </a>
-                </div>
+                <div class="fw-bold text-dark">R$ {{ client.value }}</div>
             </div>
+            {% else %}
+            <p class="text-muted text-center py-4">Nenhuma atividade recente.</p>
             {% endfor %}
+            
         </div>
     </div>
-
-    <div class="col-md-4">
-        <div class="kanban-column">
-            <div class="kanban-title d-flex justify-content-between">
-                <span>🏆 Vendas Fechadas</span>
-                <span class="badge bg-white text-secondary shadow-sm rounded-pill">Done</span>
-            </div>
-            
-            {% for client in clients if client.status == 'Fechado' %}
-            <div class="kanban-card opacity-75">
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="fw-bold text-success text-decoration-line-through">{{ client.name }}</span>
-                    <span class="badge bg-success bg-opacity-10 text-success">Pago</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <span class="fw-bold text-dark">R$ {{ client.value }}</span>
-                    <a href="{{ url_for('update_status', id=client.id, new_status='Negociação') }}" class="text-muted small" title="Reabrir">
-                        <i class="ph-bold ph-arrow-counter-clockwise"></i>
-                    </a>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-
 </div>
+
 {% endblock %}
