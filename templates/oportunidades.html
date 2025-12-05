@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+
 <div class="mb-4">
     <h2 class="page-title">Pipeline de Oportunidades</h2>
-    <p class="text-muted">Arraste os cartões para mudar o status (Simulado com botões)</p>
+    <p class="text-muted">Arraste os cartões para avançar as negociações.</p>
 </div>
 
 <div class="kanban-container">
@@ -18,28 +20,21 @@
             <span class="kanban-badge">{{ contagem[status_db] }}</span>
         </div>
 
-        {% for client in clients if client.status == status_db %}
-        <div class="kanban-card">
-            <small class="text-muted d-block mb-1">Projeto Indefinido</small>
-            <div class="fw-bold mb-2">{{ client.name }}</div>
-            <div class="h5 text-primary fw-bold mb-3">R$ {{ client.value }}</div>
-            
-            <div class="d-flex justify-content-between border-top pt-2 mt-2">
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        Mover
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('update_status', id=client.id, new_status='Lead') }}">Lead</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('update_status', id=client.id, new_status='Qualificado') }}">Qualificado</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('update_status', id=client.id, new_status='Proposta') }}">Proposta</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('update_status', id=client.id, new_status='Negociacao') }}">Negociação</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('update_status', id=client.id, new_status='Fechado') }}">Fechado</a></li>
-                    </ul>
+        <div id="col-{{ status_db }}" data-status="{{ status_db }}" class="kanban-items h-100">
+            {% for client in clients if client.status == status_db %}
+            <div class="kanban-card" data-id="{{ client.id }}" style="cursor: grab;">
+                <small class="text-muted d-block mb-1">
+                    <i class="ph-bold ph-dots-six-vertical me-1"></i> Arraste
+                </small>
+                <div class="fw-bold mb-2">{{ client.name }}</div>
+                <div class="h5 text-primary fw-bold mb-3">R$ {{ client.value }}</div>
+                
+                <div class="d-flex justify-content-between border-top pt-2 mt-2">
+                    <small class="text-muted">{{ client.phone }}</small>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
     {% endmacro %}
 
@@ -50,5 +45,44 @@
     {{ render_column('Fechado', 'Fechado', 'Fechado') }}
 
 </div>
+
+<script>
+    // Inicializa o Drag & Drop em todas as colunas
+    const columns = document.querySelectorAll('.kanban-items');
+
+    columns.forEach(column => {
+        new Sortable(column, {
+            group: 'shared', // Permite arrastar entre colunas
+            animation: 150,
+            ghostClass: 'bg-light', // Classe visual enquanto arrasta
+            onEnd: function (evt) {
+                const itemEl = evt.item;  // O cartão movido
+                const newStatus = evt.to.getAttribute('data-status'); // A nova coluna
+                const clientId = itemEl.getAttribute('data-id'); // O ID do cliente
+
+                // Envia para o backend salvar
+                fetch('/api/update_kanban', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        client_id: clientId,
+                        new_status: newStatus
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        console.log('Status atualizado com sucesso!');
+                        // Opcional: Atualizar os totais na tela via JS se desejar
+                    } else {
+                        alert('Erro ao atualizar status.');
+                    }
+                });
+            }
+        });
+    });
+</script>
 
 {% endblock %}

@@ -1,5 +1,6 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from datetime import datetime, date
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -25,11 +26,11 @@ class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20), nullable=False)
-    tipo = db.Column(db.String(50), default='Lead') # RF-004
-    # RF-007: Atributos da Oportunidade (Valor Monetário)
+    tipo = db.Column(db.String(50), default='Lead') 
     value = db.Column(db.Float, default=0.0) 
-    # RF-009: Status para o Kanban (Lead -> Negociação -> Fechado)
     status = db.Column(db.String(50), default='Lead') 
+    # RF-009: Data para permitir filtros de período no dashboard
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 # --- ROTAS ---
@@ -74,8 +75,8 @@ def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    # Lógica de Salvar (Mantida)
-    if request.method == 'POST':
+    # Lógica de Salvar Novo Cliente
+    if request.method == 'POST' and 'name' in request.form:
         name = request.form.get('name')
         phone = request.form.get('phone')
         value = request.form.get('value', 0)
@@ -91,32 +92,42 @@ def dashboard():
             flash('Cliente adicionado com sucesso!')
         return redirect(url_for('dashboard'))
 
+    # --- RF-009: FILTROS DE DATA ---
+    data_inicio = request.args.get('data_inicio')
+    data_fim = request.args.get('data_fim')
+
+    query = Client.query.filter_by(user_id=session['user_id'])
+
+    # Se houver filtro, aplica na query
+    if data_inicio and data_fim:
+        try:
+            d_ini = datetime.strptime(data_inicio, '%Y-%m-%d')
+            d_fim = datetime.strptime(data_fim, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+            query = query.filter(Client.created_at >= d_ini, Client.created_at <= d_fim)
+        except ValueError:
+            pass # Se data inválida, ignora
+            
+    all_clients_filtered = query.all()
+    
     # --- CÁLCULO DOS DADOS REAIS (KPIS) ---
-    all_clients = Client.query.filter_by(user_id=session['user_id']).all()
     
-    # 1. Volume Total (Soma de tudo no pipeline)
-    total_volume = sum(c.value for c in all_clients)
+    total_volume = sum(c.value for c in all_clients_filtered)
     
-    # 2. Vendas Fechadas (Soma só de quem é 'Fechado')
-    fechados = [c for c in all_clients if c.status == 'Fechado']
+    fechados = [c for c in all_clients_filtered if c.status == 'Fechado']
     total_fechado = sum(c.value for c in fechados)
     count_fechado = len(fechados)
     
-    # 3. Contagem Ativa (Quem não está fechado)
-    count_active = len([c for c in all_clients if c.status != 'Fechado'])
+    count_active = len([c for c in all_clients_filtered if c.status != 'Fechado'])
 
-    # 4. Ticket Médio (Média de valor por venda fechada)
     ticket_medio = 0
     if count_fechado > 0:
         ticket_medio = total_fechado / count_fechado
 
-    # 5. Taxa de Conversão (Fechados / Total de Clientes)
     taxa_conversao = 0
-    total_clientes_count = len(all_clients)
+    total_clientes_count = len(all_clients_filtered)
     if total_clientes_count > 0:
         taxa_conversao = (count_fechado / total_clientes_count) * 100
 
-    # Formatando para string bonita (R$ 1.000,00) para enviar ao HTML
     kpis = {
         'volume': f"{total_volume:,.2f}",
         'fechado': f"{total_fechado:,.2f}",
@@ -125,7 +136,7 @@ def dashboard():
         'conversao': int(taxa_conversao)
     }
 
-    return render_template('dashboard.html', clients=all_clients, kpis=kpis)
+    return render_template('dashboard.html', clients=all_clients_filtered, kpis=kpis, filtro_ini=data_inicio, filtro_fim=data_fim)
 
 @app.route('/oportunidades')
 def oportunidades():
@@ -134,7 +145,6 @@ def oportunidades():
     
     clients = Client.query.filter_by(user_id=session['user_id']).all()
     
-    # Organiza os totais por coluna para o cabeçalho do Kanban
     resumo = {
         'Lead': sum(c.value for c in clients if c.status == 'Lead'),
         'Qualificado': sum(c.value for c in clients if c.status == 'Qualificado'),
@@ -143,7 +153,6 @@ def oportunidades():
         'Fechado': sum(c.value for c in clients if c.status == 'Fechado')
     }
     
-    # Contagem de itens
     contagem = {
         'Lead': len([c for c in clients if c.status == 'Lead']),
         'Qualificado': len([c for c in clients if c.status == 'Qualificado']),
@@ -159,13 +168,10 @@ def clientes():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    # Filtro simples via URL (ex: /clientes?filtro=Lead)
     filtro_status = request.args.get('filtro')
-    
     query = Client.query.filter_by(user_id=session['user_id'])
     
     if filtro_status and filtro_status != 'Todos':
-        # Mapeia os filtros da tela para o banco
         if filtro_status == 'Ativos':
             query = query.filter(Client.status.in_(['Lead', 'Qualificado', 'Proposta', 'Negociacao']))
         elif filtro_status == 'Fechados':
@@ -176,28 +182,42 @@ def clientes():
     clients = query.all()
     return render_template('clientes.html', clients=clients, filtro_atual=filtro_status)
 
-# Nova Rota para Mover Cards no Kanban (RF-009)
+# Rota Legada (Mantida para compatibilidade)
 @app.route('/update_status/<int:id>/<string:new_status>')
 def update_status(id, new_status):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-        
     client = Client.query.get_or_404(id)
-    
-    # Segurança: Garante que o cliente pertence ao usuário logado
     if client.user_id == session['user_id']:
         client.status = new_status
         db.session.commit()
         flash(f'Cliente movido para {new_status}!')
-    
     return redirect(url_for('dashboard'))
+
+# --- RF-005: Rota AJAX para o Drag & Drop ---
+@app.route('/api/update_kanban', methods=['POST'])
+def api_update_kanban():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    client_id = data.get('client_id')
+    new_status = data.get('new_status')
+    
+    client = Client.query.get(client_id)
+    
+    if client and client.user_id == session['user_id']:
+        client.status = new_status
+        db.session.commit()
+        return jsonify({'success': True})
+    
+    return jsonify({'error': 'Cliente não encontrado'}), 404
 
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
 
-# Força criação das tabelas no Render
 with app.app_context():
     db.create_all()
 
